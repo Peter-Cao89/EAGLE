@@ -579,7 +579,9 @@ class Model(nn.Module):
         else:
             position_ids = position_ids.view(-1, seq_length).long()
 
+        # 如果attention mask为空
         if attention_mask is None:
+            # 生成维度为(batch_size, seq_length_with_past)的二维全1矩阵
             attention_mask = torch.ones(
                 (batch_size, seq_length_with_past), dtype=torch.bool, device=hidden_states.device
             )
@@ -594,6 +596,7 @@ class Model(nn.Module):
 
         #hidden_states=self.act(self.fc(torch.cat((inputs_embeds,hidden_states),dim=-1)))
         inputs_embeds=inputs_embeds.to(hidden_states.dtype)
+        # 将fused sequence进行降维处理
         hidden_states = self.fc(torch.cat((inputs_embeds, hidden_states), dim=-1))
 
 
