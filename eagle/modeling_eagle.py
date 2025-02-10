@@ -559,7 +559,7 @@ class EAGLEDecoderLayer(nn.Module):
         return outputs
 
 
-class node:
+class Node:
     def __init__(self, parent=None, value=None, dict_key=None):
         self.parent = parent
         self.value = value
@@ -584,15 +584,15 @@ class node:
 class Tree:
     def __init__(self, tree_list):
         sorted_tree_list = sorted(tree_list, key=lambda x: (len(x), x))
-        self.root = node()
+        self.root = Node()
         self.node_dic = {}
         for tree_node in sorted_tree_list:
             cur_value = tree_node[-1]
             if len(tree_node) == 1:
-                cur_node = node(parent=self.root, value=cur_value, dict_key=tuple(tree_node))
+                cur_node = Node(parent=self.root, value=cur_value, dict_key=tuple(tree_node))
             else:
                 cur_parent = self.node_dic[tuple(tree_node[:-1])]
-                cur_node = node(parent=cur_parent, value=cur_value, dict_key=tuple(tree_node))
+                cur_node = Node(parent=cur_parent, value=cur_value, dict_key=tuple(tree_node))
             self.node_dic[tuple(tree_node)] = cur_node
         self.indexnode()
 
