@@ -462,7 +462,7 @@ class Model(nn.Module):
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
-
+        # Embedding Layer
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         if load_emb:
             from safetensors import safe_open
@@ -487,8 +487,10 @@ class Model(nn.Module):
 
 
         #self.init_tree()
-
+        # Autoregressive head
+        # decoder layer
         self.layers = nn.ModuleList([LlamaDecoderLayer(config,index) for index in range(config.num_hidden_layers)])
+        # fc layer
         self.fc=nn.Linear(2*config.hidden_size,config.hidden_size,bias=bias)
         self.act=ACT2FN[config.hidden_act]
         for param in self.embed_tokens.parameters():
@@ -539,8 +541,8 @@ class Model(nn.Module):
 
     def forward(
         self,
-        hidden_states,
-        input_ids,
+        hidden_states: Optional[torch.Tensor],  # 输入 feature sequence
+        input_ids: Optional[torch.Tensor],  # 输入 token sequence
         attention_mask: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         past_key_values: Optional[List[torch.FloatTensor]] = None,
@@ -551,11 +553,13 @@ class Model(nn.Module):
         return_dict: Optional[bool] = None,
         std=None
     ):
+        # feature的维度为batch size、sequence length、hidden size
         batch_size, seq_length, _ = hidden_states.shape
         seq_length_with_past = seq_length
         past_key_values_length = 0
 
         with torch.no_grad():
+            # 将token sequence转换为Embedding sequence
             inputs_embeds = self.embed_tokens(input_ids)
             #inputs_embeds = inputs_embeds.detach()
 

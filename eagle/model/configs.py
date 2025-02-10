@@ -10,31 +10,32 @@ class EConfig(PretrainedConfig):
 
 
     Args:
-        vocab_size (`int`, *optional*, defaults to 32000):
+        vocab_size 词表大小(`int`, *optional*, defaults to 32000):
             Vocabulary size of the LLaMA model. Defines the number of different tokens that can be represented by the
             `inputs_ids` passed when calling [`LlamaModel`]
-        hidden_size (`int`, *optional*, defaults to 4096):
+        hidden_size 隐维度,默认大小为4096 (`int`, *optional*, defaults to 4096):
             Dimension of the hidden representations.
-        intermediate_size (`int`, *optional*, defaults to 11008):
+        intermediate_size 中间维度的大小11008(`int`, *optional*, defaults to 11008):
             Dimension of the MLP representations.
-        num_hidden_layers (`int`, *optional*, defaults to 32):
+        num_hidden_layers 隐层的数量(`int`, *optional*, defaults to 32):
             Number of hidden layers in the Transformer encoder.
-        num_attention_heads (`int`, *optional*, defaults to 32):
+        num_attention_heads 注意力头的数量(`int`, *optional*, defaults to 32):
             Number of attention heads for each attention layer in the Transformer encoder.
-        num_key_value_heads (`int`, *optional*):
+        num_key_value_heads KV head的数量(`int`, *optional*):
             This is the number of key_value heads that should be used to implement Grouped Query Attention. If
             `num_key_value_heads=num_attention_heads`, the model will use Multi Head Attention (MHA), if
             `num_key_value_heads=1 the model will use Multi Query Attention (MQA) otherwise GQA is used. When
             converting a multi-head checkpoint to a GQA checkpoint, each group key and value head should be constructed
             by meanpooling all the original heads within that group. For more details checkout [this
             paper](https://arxiv.org/pdf/2305.13245.pdf). If it is not specified, will default to
-            `num_attention_heads`.
+            `num_attention_heads`.实现GQA的KVhead数量。
         pretraining_tp (`int`, *optional*, defaults to `1`):
             Experimental feature. Tensor parallelism rank used during pretraining. Please refer to [this
             document](https://huggingface.co/docs/transformers/parallelism) to understand more about it. This value is
             necessary to ensure exact reproducibility of the pretraining results. Please refer to [this
             issue](https://github.com/pytorch/pytorch/issues/76232).
         hidden_act (`str` or `function`, *optional*, defaults to `"silu"`):
+            decoder中的非线性激活函数
             The non-linear activation function (function or string) in the decoder.
         max_position_embeddings (`int`, *optional*, defaults to 2048):
             The maximum sequence length that this model might ever be used with. Typically set this to something large
@@ -42,6 +43,7 @@ class EConfig(PretrainedConfig):
         initializer_range (`float`, *optional*, defaults to 0.02):
             The standard deviation of the truncated_normal_initializer for initializing all weight matrices.
         rms_norm_eps (`float`, *optional*, defaults to 1e-12):
+            RMS norm的epsilon
             The epsilon used by the rms normalization layers.
         use_cache (`bool`, *optional*, defaults to `True`):
             Whether or not the model should return the last key/values attentions (not used by all models). Only
@@ -49,6 +51,7 @@ class EConfig(PretrainedConfig):
         tie_word_embeddings(`bool`, *optional*, defaults to `False`):
             Whether to tie weight embeddings
         rope_scaling (`Dict`, *optional*):
+            包含rope embedding缩放配置的字典。仅支持两种缩放策略，一种是线性的，一种是动态的
             Dictionary containing the scaling configuration for the RoPE embeddings. Currently supports two scaling
             strategies: linear and dynamic. Their scaling factor must be an float greater than 1. The expected format
             is `{"type": strategy name, "factor": scaling factor}`. When using this flag, don't update

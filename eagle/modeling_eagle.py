@@ -746,8 +746,8 @@ class EAGLEModel(nn.Module):
 
     def forward(
             self,
-            hidden_states,
-            input_ids,
+            hidden_states: Optional[torch.Tensor], # feature sequence，shape为[batch size, sequence length, hidden dim]
+            input_ids: Optional[torch.Tensor], # advanced token sequence, shape为[batch size, sequence length]
             attention_mask: Optional[torch.Tensor] = None,
             position_ids: Optional[torch.LongTensor] = None,
             past_key_values: Optional[List[torch.FloatTensor]] = None,
@@ -760,6 +760,7 @@ class EAGLEModel(nn.Module):
         past_key_values_length = 0
 
         with torch.no_grad():
+            # 按照论文，将token sequence抓换为shape为(batch size, sequence length, hidden dim)的embedding sequence
             inputs_embeds = self.embed_tokens(input_ids)
 
         if past_key_values is not None:
@@ -775,6 +776,7 @@ class EAGLEModel(nn.Module):
             position_ids = position_ids.view(-1, seq_length).long()
 
         if attention_mask is None:
+            # attention_mask的shape为[batch_size, seq_length_with_past]
             attention_mask = torch.ones(
                 (batch_size, seq_length_with_past), dtype=torch.bool, device=hidden_states.device
             )
@@ -783,6 +785,8 @@ class EAGLEModel(nn.Module):
         )
 
         inputs_embeds = inputs_embeds.to(hidden_states.dtype)
+        # 按照论文，将tokens embedding序列与feature序列拼接为一个fused sequence，shape为[batch size, sequence length, 2 * hidden dim]
+        # 然后，FC层对fused sequence进行降维处理
         hidden_states = self.fc(torch.cat((inputs_embeds, hidden_states), dim=-1))
 
         all_hidden_states = () if output_hidden_states else None
