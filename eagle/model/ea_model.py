@@ -30,30 +30,37 @@ class EaModel(nn.Module):
     ):
 
         super().__init__()
-        self.base_model = base_model
-        self.config = base_model.config
-        self.hidden_size = base_model.lm_head.weight.shape[-1]
-        self.vocab_size = base_model.lm_head.weight.shape[0]
+        self.base_model = base_model  # 基础模型
+        self.config = base_model.config  # 基础模型的配置
+        self.hidden_size = base_model.lm_head.weight.shape[-1]  # hidden size
+        self.vocab_size = base_model.lm_head.weight.shape[0]  # 词表大小
         self.base_model_name_or_path = base_model_name_or_path
-        self.tokenizer = AutoTokenizer.from_pretrained(self.base_model_name_or_path)
+        # 加载分词器tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.base_model_name_or_path)
+        # 读取eagle 配置参数
         config = EConfig.from_pretrained(ea_model_path)
-        with open(ea_model_path,"r") as f:
-            con=json.loads(f.read())
+        # 读取配置文件
+        with open(ea_model_path, "r") as f:
+            con = json.loads(f.read())
+        # 获取bias
         try:
-            bias=con["bias"]
+            bias = con["bias"]
         except:
-            bias=True
-        self.ea_layer = Model(config,bias=bias)
+            bias = True
+        # 构建EAGLE Layer
+        self.ea_layer = Model(config, bias=bias)
 
-        low_memory=False
+        low_memory = False
 
         device = base_model.model.layers[-1].self_attn.q_proj.weight.device
-        if device!=base_model.lm_head.weight.device:
+        if device != base_model.lm_head.weight.device:
             self.ea_layer.diff_device = True
             if not low_memory:
                 # self.ea_layer.head=nn.Linear(base_model.lm_head.in_features,base_model.lm_head.out_features,bias=False)
                 # self.ea_layer.head.weight=copy.deepcopy(base_model.lm_head.weight)
                 # self.ea_layer.head.to(device)
+                # 将基础模型的LM head参数赋值给EA layer
                 self.ea_layer.headweight = base_model.lm_head.weight.clone().to(device)
             else:
                 self.ea_layer.layer_device = device
@@ -61,6 +68,7 @@ class EaModel(nn.Module):
         else:
             self.ea_layer.diff_device = False
         self.ea_layer.to(self.base_model.dtype).to(device)
+        # 初始化attention tree
         self.ea_layer.init_tree()
 
     def get_tokenizer(self):
@@ -80,8 +88,8 @@ class EaModel(nn.Module):
             **kwargs,
     ):
         #assert Type=="LLaMA" or "Mixtral"
-        Type=AutoConfig.from_pretrained(base_model_path).architectures[0]
-        if Type=='LlamaForCausalLM':
+        Type = AutoConfig.from_pretrained(base_model_path).architectures[0]
+        if Type == 'LlamaForCausalLM':
             base_model = KVLlamaForCausalLM.from_pretrained(
                 base_model_path, **kwargs
             )
@@ -90,19 +98,23 @@ class EaModel(nn.Module):
                 base_model_path, **kwargs
             )
 
-        configpath=os.path.join(ea_model_path,"config.json")
+        configpath = os.path.join(ea_model_path, "config.json")
         if not os.path.exists(configpath):
             configpath = hf_hub_download(ea_model_path, "config.json")
+        # 实例化EaModel
         model = cls(
             base_model,
             base_model_path,
             configpath
         )
-        load_model_path=os.path.join(ea_model_path, "pytorch_model.bin")
+        load_model_path = os.path.join(ea_model_path, "pytorch_model.bin")
         if not os.path.exists(load_model_path):
-            load_model_path=hf_hub_download(ea_model_path, "pytorch_model.bin")
+            load_model_path = hf_hub_download(
+                ea_model_path, "pytorch_model.bin")
+        # 加载draft模型
         ea_layer_state_dict = torch.load(load_model_path,
                                          map_location=base_model.device)
+        # 将draft模型参数赋予ea_layer
         model.ea_layer.load_state_dict(ea_layer_state_dict, strict=True)
 
         return model
@@ -118,7 +130,7 @@ class EaModel(nn.Module):
             init=True,
             logits_processor=None
     ):
-
+        # 开启推理模式
         with torch.inference_mode():
             # Pass input through the base model
             outputs = self.base_model.model(
@@ -169,11 +181,13 @@ class EaModel(nn.Module):
         #assert input_ids.shape[0] == 1, "Only support batch size 1 for now!!"
         # Avoid modifying the input_ids in-place
         input_ids = input_ids.clone()
+        # 将stable_kv赋值为None
         self.ea_layer.reset_kv()
 
         if hasattr(self, "tree_choices") and self.tree_choices == tree_choices:
             tree_buffers = self.tree_buffers
         else:
+            # 生成tree buffers
             tree_buffers = generate_tree_buffers(
                 tree_choices, device=self.base_model.model.layers[-1].self_attn.q_proj.weight.device
             )

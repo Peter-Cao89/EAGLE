@@ -99,7 +99,8 @@ class Tree:
 
 def generate_tree_buffers(tree_choices, device="cuda"):
     tree=Tree(tree_choices)
-    sorted_tree_choices = sorted(tree_choices, key=lambda x: (len(x), x))
+    # sorted_tree_choices = sorted(tree_choices, key=lambda x: (len(x), x))
+    # 树的长度
     tree_len = tree.num_node_wchild()
 
 
@@ -111,7 +112,7 @@ def generate_tree_buffers(tree_choices, device="cuda"):
         depth_counts[x.depth-1]+=1
     depth_counts_sum = [sum(depth_counts[:i + 1]) for i in range(len(depth_counts))]
 
-
+    # 构建tree Attention mask
     tree_attn_mask = torch.eye(tree_len, tree_len)
 
     for id,x in enumerate(nodes_wc):

@@ -88,7 +88,9 @@ def pad_path(path: List[int], length: int, pad_value: int = -2) -> List[int]:
 
 
 def generate_tree_buffers(tree_choices, device="cuda"):
+    # 对choices进行排序
     sorted_tree_choices = sorted(tree_choices, key=lambda x: (len(x), x))
+    # tree_len为26
     tree_len = len(sorted_tree_choices) + 1
 
     # Initialize depth_counts to keep track of how many choices have a particular depth
@@ -101,8 +103,9 @@ def generate_tree_buffers(tree_choices, device="cuda"):
         depth_counts[depth - 1] += 1
         prev_depth = depth
 
+    # 创建一个大小为(tree_len, tree_len)的单位矩阵tree_attn_mask
     tree_attn_mask = torch.eye(tree_len, tree_len)
-    tree_attn_mask[:, 0] = 1
+    tree_attn_mask[:, 0] = 1  # 将第一列全部设置为1，表示根节点对所有节点
     start = 0
     for i in range(len(depth_counts)):
         for j in range(depth_counts[i]):

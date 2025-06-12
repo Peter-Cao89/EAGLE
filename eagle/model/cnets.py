@@ -459,10 +459,14 @@ class Model(nn.Module):
 
 
         self.gradient_checkpointing = True
+        # 获取padding id
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
-
+        ###########################
+        # EAGLE Layer由 Embedding Layer + LM Head + Autoregressive Head组成
+        ###########################
         # Embedding Layer
+        # 输入维度为vocab size ，输出维度为hidden size
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         if load_emb:
             from safetensors import safe_open
@@ -487,11 +491,13 @@ class Model(nn.Module):
 
 
         #self.init_tree()
-        # Autoregressive head
+        # Autoregressive head，由一个FC layer+ 一个decoder layer组成
         # decoder layer
         self.layers = nn.ModuleList([LlamaDecoderLayer(config,index) for index in range(config.num_hidden_layers)])
         # fc layer
-        self.fc=nn.Linear(2*config.hidden_size,config.hidden_size,bias=bias)
+        self.fc = nn.Linear(2*config.hidden_size,
+                            config.hidden_size, bias=bias)
+        # 激活函数
         self.act=ACT2FN[config.hidden_act]
         for param in self.embed_tokens.parameters():
             param.requires_grad = False
